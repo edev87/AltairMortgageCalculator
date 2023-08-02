@@ -69,17 +69,146 @@
       <div class="col-12 col-lg-8">
         <pre class="line-numbers">
           <code class="language-js">
-            function displayMessage(){
-              let inputBox = document.getElementById("message");
-              let message = inputBox.value
+            //get numbers for the loan out of inputs
+            const getValues = () => {
+              //get each of the values from the inputs on the page
+              let loanAmount = document.getElementById('loan-amount').value;
+              let loanLength = document.getElementById('term').value;
+              let loanInterest = document.getElementById('interest-rate').value;
             
-              Swal.fire(
-                {
-              backdrop: false,
-              title: 'App Name',
-              text: message
+              loanAmount = parseFloat(loanAmount);
+              loanLength = parseInt(loanLength);
+              loanInterest = parseFloat(loanInterest);
+            
+              //make sure those values make sense
+              if (isNaN(loanAmount) || isNaN(loanLength) || isNaN(loanInterest)
+                || loanAmount <= 0 || loanLength <= 0 || loanInterest <= 0) {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Woops!',
+                  text: 'Please enter valid loan details.'
+                })
+              } else {
+                let loanTotals = caluclateTotals(loanAmount, loanLength, loanInterest);
+                displayTotals(loanTotals.monthlyPayment, loanAmount, loanTotals.totalInterest, loanTotals.totalCost);
+            
+                let payments = calculatePayments(loanLength, loanTotals.monthlyPayment, loanAmount, loanInterest);
+            
+                displayPayments(payments);
+            
+              }
+            
+            }
+            
+            //calculate the totals for the loan
+            const caluclateTotals = (principal, term, rate) => {
+              //calculate the monthly
+              let monthlyPayment = (principal * (rate / 1200)) / (1 - Math.pow((1 + rate / 1200), -term));
+              //calulcate the total cost
+              let totalCost = monthlyPayment * term;
+              //calculate the total interest
+              let totalInterest = totalCost - principal;
+            
+              let loanTotals = {
+                monthlyPayment: monthlyPayment,
+                totalCost: totalCost,
+                totalInterest: totalInterest
+              }
+              return loanTotals;
+            
+            
+            
+            }
+            
+            //display the totals for the loan
+            const displayTotals = (monthlyPayment, principal, interest, cost) => {
+              let formatOptions = {
+                style: 'currency',
+                currency: 'USD'
+              }
+              document.getElementById("amount").innerHTML = monthlyPayment.toLocaleString('en-US', formatOptions);
+              document.getElementById("total-principal-amount").innerHTML = principal.toLocaleString('en-US', formatOptions);;
+              document.getElementById("total-interest-amount").innerHTML = interest.toLocaleString('en-US', formatOptions);;
+              document.getElementById("total-cost-amount").innerHTML = cost.toLocaleString('en-US', formatOptions);;
+            
+            }
+            
+            //calculate each month of payments in the table
+            const calculatePayments = (term, monthlyPayment, principal, rate) => {
+              // create a for loop to calculate every month of payments
+            
+              let remainingBalance = principal;
+              let totalInterest = 0;
+              let paymentsArray = [];
+            
+              for (let month = 1; month <= term; month++) {
+            
+                let interestPayment = remainingBalance * (rate / 1200);
+            
+                let principalPayment = monthlyPayment - interestPayment;
+            
+                totalInterest += interestPayment;
+            
+                remainingBalance -= principalPayment;
+            
+                // -- create an object to store those values
+            
+                let loanPayment = {
+                  month: month,
+                  payment: monthlyPayment,
+                  principal: principalPayment,
+                  interest: interestPayment,
+                  totalInterest: totalInterest,
+                  balance: remainingBalance
+            
                 }
-                );
+                // -- put that object in an array
+                paymentsArray.push(loanPayment);
+            
+              }
+            
+              // return the array
+            
+              return paymentsArray;
+            
+            }
+            
+            //display each month of payments in the table
+            const displayPayments = (payments) => {
+            
+              const tableRowTemplate = document.getElementById('payment-row');
+              const paymentsTable = document.getElementById('mortgage-table');
+              paymentsTable.innerHTML = '';
+            
+              let formatOptions = {
+                style: 'currency',
+                currency: 'USD'
+              }
+            
+              for (let i = 0; i < payments.length; i++) {
+            
+                let currentMonthPayment = payments[i];
+            
+                let tableRow = tableRowTemplate.content.cloneNode(true);
+            
+                let tableCell = tableRow.querySelectorAll('td'); //will return a array of td's
+                tableCell[0].textContent = currentMonthPayment.month;
+                tableCell[1].textContent = currentMonthPayment.payment.toLocaleString('en-US', formatOptions);
+                tableCell[2].textContent = currentMonthPayment.principal.toLocaleString('en-US', formatOptions);
+                tableCell[3].textContent = currentMonthPayment.interest.toLocaleString('en-US', formatOptions);
+                tableCell[4].textContent = currentMonthPayment.totalInterest.toLocaleString('en-US', formatOptions);
+                tableCell[5].textContent = currentMonthPayment.balance.toLocaleString('en-US', formatOptions);
+            
+                if (i == payments.length - 1) {
+                  tableRow.querySelector('tr').classList.add('table-success')
+                }
+                paymentsTable.appendChild(tableRow);
+            
+              }
+            
+            
+            }
+            
             
             }
           </code>
@@ -88,11 +217,62 @@
 
       </div>
       <div class="col-12 col-lg-4">
-        <p>The code is structured in one function</p>
-        <h5>displayMessage</h5>
-        <p>Shows a SweetAlert with the value of the <code>
-          message
-        </code> variable</p>
+        <p>The code is structured in four functions</p>
+
+        <h5>getValues()</h5>
+        <p> <code> getValues() </code> is used to gather the input from the user and this data is validated
+          before being passed to the <code>loanTotals()</code> function.
+        </p>
+
+        <h5>caluclateTotals(principal, term, rate)</h5>
+        <p> <code> caluclateTotals(principal, term, rate) </code> is used to
+          calculate the <code>monthlyPayment</code>, <code>totalCost</code>,
+          and <code>totalInterest</code>. After these values are caluculated, they are
+          stored in object called <code>loanTotals</code> and this object is returned to the
+          <code>getValues()</code> function to be used by <code>displayTotals()</code>
+        </p>
+
+        <h5>displayTotals(loanTotals.monthlyPayment, loanAmount, loanTotals.totalInterest, loanTotals.totalCost)</h5>
+        <p> <code> displayTotals(loanTotals.monthlyPayment, loanAmount, loanTotals.totalInterest, loanTotals.totalCost)
+        </code> is used to display the total the total monthly payment for the loan alogn with the
+          total principal, total interest, and total cost</code>.
+        </p>
+
+        <h5>calculatePayments(loanLength, loanTotals.monthlyPayment, loanAmount, loanInterest);
+        </h5>
+
+        <p> <code>calculatePayments(loanLength, loanTotals.monthlyPayment, loanAmount, loanInterest);
+          </code> is used to calculate the payments for each month. A for loop is used to loop through the
+          entire loan term. Inside of this loop the monthly payment, principal, interest, total intertest, and balance
+          are calculated and then stored in a object called <code>loanPayment</code>. The month number is also stored
+          inside of this object and the object is then
+          stored in a array called <code>paymentsArray</code>. This array is retured to <code>getValues()</code> where
+          it be used
+          by <code>displayTotals()</code>
+        </p>
+
+        <p> <code> displayPayments(payments)</code> is used to display the payments for each month inside of a table.
+          The table row <code>template</code> used to how the table row data is fetched, along with the payment table
+          that will
+          use this table row <code>template</code>. The payment table is cleared, then a a for loop is used to loop
+          through the
+          the payment data stored inside of the object <code>loanPayment</code>. Each invidual object inside of
+          <code>loanPayment</code>
+          represents a month of the term so each month will be eventually be stored in the variable
+          <code>currwentMonthPayment</code>. The content inside table row template is cloned and them modified. The
+          <code>tableCell</code>
+          varible is created to hold the array of <code><td></td></code> data by using
+          <code>querySelectorAll('td')</code>.
+          After that, indexes 0-1 are modified by the using the selective fields on the <code>loanPayment</code> object
+          which are month, payment, principal, interest, total interest, and balance. An <code>if</code> statement is
+          used
+          at the end of the for loop to change the last row of the table to have a background color green. After the for
+          loop
+          is done, the tbale row is appended to the <code>paymentsTable</code> where all the payment data for each month
+          of the
+          loan will be display.
+        </p>
+
 
       </div>
     </div>

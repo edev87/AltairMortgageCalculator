@@ -133,17 +133,6 @@ const displayPayments = (payments) => {
     }
     paymentsTable.appendChild(tableRow);
 
-    //     <tr>
-    //   <td data-id="month"></td>
-    //   <td data-id="payment"></td>
-    //   <td data-id="principal"></td>
-    //   <td data-id="interest"></td>
-    //   <td data-id="total-interest"></td>
-    //   <td data-id="balance"></td>
-    // </tr>
-
-
-
   }
 
 
