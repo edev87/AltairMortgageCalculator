@@ -1,122 +1,150 @@
-const validateInput = () => {
+//get numbers for the loan out of inputs
+const getValues = () => {
+  //get each of the values from the inputs on the page
+  let loanAmount = document.getElementById('loan-amount').value;
+  let loanLength = document.getElementById('term').value;
+  let loanInterest = document.getElementById('interest-rate').value;
 
-  let loanAmount = parseInt(document.getElementById('loan-amount').value);
-  let months = parseInt(document.getElementById('term-months').value);
-  let interestRate = parseInt(document.getElementById('interest-rate').value) / 100;
+  loanAmount = parseFloat(loanAmount);
+  loanLength = parseInt(loanLength);
+  loanInterest = parseFloat(loanInterest);
 
-  switch(true){
-    case loanAmount < 0 || loanAmount == 0 || '':
-      Swal.fire({
-        icon: 'error',
-        title: 'Oops...',
-        text: 'The loan amount must be greater than 0!'
-      })
-      break;
-      case months < 1 || months > 100 || '':
-        Swal.fire({
-          icon: 'error',
-          title: 'Oops...',
-          text: 'The term for the mortgage must be greater than 1 and less than 100!'
-        })
-        break;
-        case interestRate > 1 || '':
-          Swal.fire({
-            icon: 'error',
-            title: 'Oops...',
-            text: 'The interest rate must be greater than 0!'
-          })
-          break;
+  //make sure those values make sense
+  if (isNaN(loanAmount) || isNaN(loanLength) || isNaN(loanInterest)
+    || loanAmount <= 0 || loanLength <= 0 || loanInterest <= 0) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Woops!',
+      text: 'Please enter valid loan details.'
+    })
+  } else {
+    let loanTotals = caluclateTotals(loanAmount, loanLength, loanInterest);
+    displayTotals(loanTotals.monthlyPayment, loanAmount, loanTotals.totalInterest, loanTotals.totalCost);
 
+    let payments = calculatePayments(loanLength, loanTotals.monthlyPayment, loanAmount, loanInterest);
+
+    displayPayments(payments);
 
   }
-  // if (loanAmount < 0 || loanAmount == 0 || '') {
-  //   Swal.fire({
-  //     icon: 'error',
-  //     title: 'Oops...',
-  //     text: 'The loan amount must be greater than 0!'
-  //   })
-  // } else if (months < 1 || months > 100 || '') {
-  //   Swal.fire({
-  //     icon: 'error',
-  //     title: 'Oops...',
-  //     text: 'The term for the mortgage mus tbe greater 1 and less than 100!'
-  //   })
-  // }
-  // else if (interestRate < 1 || ' ') {
-  //   Swal.fire({
-  //     icon: 'error',
-  //     title: 'Oops...',
-  //     text: 'The interest rate must be greater than 0!'
-  //   })
-  // }
-  // else {
- return   calculateLoan(loanAmount, months, interestRate);
- // }
 
 }
 
-const calculateLoan = (loanAmount, months, interestRate) => {
-  let totalMonthlyPayment = 0;
-  let previousRemainingBalance = 0;
-  let interestPayment = 0;
-  let principalPayment = 0;
-  let remainingBalance = 0;
+//calculate the totals for the loan
+const caluclateTotals = (principal, term, rate) => {
+  //calculate the monthly
+  let monthlyPayment = (principal * (rate / 1200)) / (1 - Math.pow((1 + rate / 1200), -term));
+  //calulcate the total cost
+  let totalCost = monthlyPayment * term;
+  //calculate the total interest
+  let totalInterest = totalCost - principal;
 
- // totalMonthlyPayment = (parseFloat(Math.abs((loanAmount) * (interestRate / 1200) / (1 - (1 + interestRate / 1200) * (Math.pow(1, -months))))));
+  let loanTotals = {
+    monthlyPayment: monthlyPayment,
+    totalCost: totalCost,
+    totalInterest: totalInterest
+  }
+  return loanTotals;
 
-// totalMonthlyPayment = (parseFloat(Math.abs(totalMonthlyPayment)).toFixed(2));
-//    previousRemainingBalance = loanAmount;
 
- totalMonthlyPayment = (loanAmount) * (interestRate / 1200) /
-(1 - (1 + interestRate / 1200) * (Math.pow(1, -months)));
 
-   interestPayment = loanAmount * (interestRate / 1200);
+}
 
-  principalPayment = 0;
-  principalPayment = totalMonthlyPayment - interestPayment;
+//display the totals for the loan
+const displayTotals = (monthlyPayment, principal, interest, cost) => {
+  let formatOptions = {
+    style: 'currency',
+    currency: 'USD'
+  }
+  document.getElementById("amount").innerHTML = monthlyPayment.toLocaleString('en-US', formatOptions);
+  document.getElementById("total-principal-amount").innerHTML = principal.toLocaleString('en-US', formatOptions);;
+  document.getElementById("total-interest-amount").innerHTML = interest.toLocaleString('en-US', formatOptions);;
+  document.getElementById("total-cost-amount").innerHTML = cost.toLocaleString('en-US', formatOptions);;
 
-  remainingBalance = 0;
- // remainingBalance = previousRemainingBalance - principalPayment;
+}
 
-  let mortgagePaymentData = [];
-  let pRB = new Array(1);
+//calculate each month of payments in the table
+const calculatePayments = (term, monthlyPayment, principal, rate) => {
+  // create a for loop to calculate every month of payments
 
-  for (let i = 1; 1 <= 12; i++) {
+  let remainingBalance = principal;
+  let totalInterest = 0;
+  let paymentsArray = [];
 
-   let totalMonthlyPayment = (loanAmount) * (interestRate / 1200) /
-      (1 - (1 + interestRate / 1200) * (Math.pow(1, -months)));
+  for (let month = 1; month <= term; month++) {
 
-    totalMonthlyPayment = (parseFloat(Math.abs(totalMonthlyPayment)).toFixed(2));
-    totalMonthlyPayment = parseFloat(totalMonthlyPayment);
-    console.log(totalMonthlyPayment);
-   previousRemainingBalance = loanAmount;
+    let interestPayment = remainingBalance * (rate / 1200);
 
-    if (i == 1) {
-       remainingBalance = loanAmount - principalPayment;
-      pRB.push(remainingBalance);
+    let principalPayment = monthlyPayment - interestPayment;
+
+    totalInterest += interestPayment;
+
+    remainingBalance -= principalPayment;
+
+    // -- create an object to store those values
+
+    let loanPayment = {
+      month: month,
+      payment: monthlyPayment,
+      principal: principalPayment,
+      interest: interestPayment,
+      totalInterest: totalInterest,
+      balance: remainingBalance
+
     }
-    else if (i >= 2) {
-      previousRemainingBalance = pRB[0];
-      remainingBalance = previousRemainingBalance - principalPayment;
-      pRB.push(remainingBalance);
-
-    }
-    //  let remainingBalance = loanAmount - principalPayment;
-    //  pRB.push(remainingBalance);
-
-    let interestPayment = loanAmount * (interestRate / 1200);
-
-    let principalPayment = totalMonthlyPayment - interestPayment;
-
-    mortgagePaymentData.push({
-      i: i,
-      "totalMonthlyPayment": totalMonthlyPayment,
-      "interestPayment": interestPayment,
-      "principalPayment": principalPayment,
-      "remainingBalance": remainingBalance
-    })
+    // -- put that object in an array
+    paymentsArray.push(loanPayment);
 
   }
 
-  console.log(JSON.stringify(mortgagePaymentData));
+  // return the array
+
+  return paymentsArray;
+
+}
+
+//display each month of payments in the table
+const displayPayments = (payments) => {
+
+  const tableRowTemplate = document.getElementById('payment-row');
+  const paymentsTable = document.getElementById('mortgage-table');
+  paymentsTable.innerHTML = '';
+
+  let formatOptions = {
+    style: 'currency',
+    currency: 'USD'
+  }
+
+  for (let i = 0; i < payments.length; i++) {
+
+    let currentMonthPayment = payments[i];
+
+    let tableRow = tableRowTemplate.content.cloneNode(true);
+
+    let tableCell = tableRow.querySelectorAll('td'); //will return a array of td's
+    tableCell[0].textContent = currentMonthPayment.month;
+    tableCell[1].textContent = currentMonthPayment.payment.toLocaleString('en-US', formatOptions);
+    tableCell[2].textContent = currentMonthPayment.principal.toLocaleString('en-US', formatOptions);
+    tableCell[3].textContent = currentMonthPayment.interest.toLocaleString('en-US', formatOptions);
+    tableCell[4].textContent = currentMonthPayment.totalInterest.toLocaleString('en-US', formatOptions);
+    tableCell[5].textContent = currentMonthPayment.balance.toLocaleString('en-US', formatOptions);
+
+    if (i == payments.length - 1) {
+      tableRow.querySelector('tr').classList.add('table-success')
+    }
+    paymentsTable.appendChild(tableRow);
+
+    //     <tr>
+    //   <td data-id="month"></td>
+    //   <td data-id="payment"></td>
+    //   <td data-id="principal"></td>
+    //   <td data-id="interest"></td>
+    //   <td data-id="total-interest"></td>
+    //   <td data-id="balance"></td>
+    // </tr>
+
+
+
+  }
+
+
 }
